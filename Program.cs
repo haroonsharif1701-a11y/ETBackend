@@ -95,7 +95,7 @@ namespace ExpenseTracker
                 });
             });
 
-            // Dependency Injection
+            // Dependency Injection 
             builder.Services.AddScoped<Db>();
             builder.Services.AddScoped<UserModel>();
             builder.Services.AddScoped<AuthService>();
