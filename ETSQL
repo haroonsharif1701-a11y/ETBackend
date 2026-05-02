@@ -1,0 +1,441 @@
+
+CREATE Database ExpenseTracker
+
+
+CREATE TABLE skey_user(
+id_user INT IDENTITY (1,1) PRIMARY KEY,
+loginname VARCHAR(300),
+fullname VARCHAR(300),
+password VARBINARY(32)
+is_active INT,
+uuqid UNIQUEIDENTIFIER,
+regid VARCHAR(500),
+os VARCHAR(100), 
+createdby INT,
+createddt DATETIME
+)
+
+CREATE TABLE ekey_expense(
+id_expense INT IDENTITY (1,1) PRIMARY KEY,
+title VARCHAR(300),
+expense INT,
+category VARCHAR(300),
+message VARCHAR(500),
+createdby INT,
+createddt DATETIME,
+modifiedby INT,
+modifieddt DATETIME
+)
+
+CREATE TABLE  ekey_budget(
+id_budget INT IDENTITY(1,1) PRIMARY KEY,
+title VARCHAR(300),
+expense INT,
+category VARCHAR(300),
+message VARCHAR(500),
+createdby INT,
+createddt DATETIME,
+modifiedby INT,
+modifieddt DATETIME 
+
+)
+
+GO
+CREATE PROCEDURE loginverify
+(
+    @loginname VARCHAR(300),
+    @password VARBINARY(500)  -- hashed password
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Basic validation
+    IF (@loginname IS NULL OR @password IS NULL)
+    BEGIN
+        SELECT 
+            0 AS status,
+            'Invalid input' AS message;
+        RETURN;
+    END
+
+    -- Authenticate user
+    SELECT 
+        id_user,
+        loginname,
+        fullname,
+        is_active
+    FROM skey_user
+    WHERE 
+        loginname = @loginname
+        AND password = @password
+        AND is_active = 1;
+
+    -- If no rows → invalid login
+    IF @@ROWCOUNT = 0
+    BEGIN
+        SELECT 
+            0 AS status,
+            'Invalid credentials or inactive user' AS message;
+    END
+    ELSE
+    BEGIN
+        SELECT 
+            1 AS status,
+            'Login successful' AS message;
+    END
+END
+
+
+GO
+
+CREATE PROCEDURE expense_addupd
+(
+    @id_expense INT = 0 OUTPUT,
+    @title VARCHAR(300),
+    @expense INT,
+    @category VARCHAR(300),
+    @message VARCHAR(500),
+    @uuqid UNIQUEIDENTIFIER
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @id_user INT;
+
+    -- Get user
+    SELECT @id_user = id_user
+    FROM skey_user
+    WHERE uuqid = @uuqid;
+
+    -- Validation
+    IF (@id_user IS NULL)
+    BEGIN
+        SELECT 0 AS status, 'Invalid user' AS message;
+        RETURN;
+    END
+
+    -- INSERT
+    IF (@id_expense IS NULL OR @id_expense = 0)
+    BEGIN
+        INSERT INTO ekey_expense
+        (
+            title,
+            expense,
+            category,
+            message,
+            createdby,
+            createddt
+        )
+        VALUES
+        (
+            @title,
+            @expense,
+            @category,
+            @message,
+            @id_user,
+            GETDATE()
+        );
+
+        SET @id_expense = SCOPE_IDENTITY();
+
+        SELECT 1 AS status, 'Inserted successfully' AS message, @id_expense AS id_expense;
+    END
+    ELSE
+    BEGIN
+        -- UPDATE
+        UPDATE ekey_expense
+        SET
+            title = @title,
+            expense = @expense,
+            category = @category,
+            message = @message,
+            modifiedby = @id_user,
+            modifieddt = GETDATE()
+        WHERE id_expense = @id_expense;
+
+        IF (@@ROWCOUNT = 0)
+        BEGIN
+            SELECT 0 AS status, 'Expense not found' AS message;
+        END
+        ELSE
+        BEGIN
+            SELECT 1 AS status, 'Updated successfully' AS message, @id_expense AS id_expense;
+        END
+    END
+END
+GO
+CREATE PROCEDURE budget_addupd
+(
+    @id_budget INT = 0 OUTPUT,
+    @title VARCHAR(300),
+    @expense INT,
+    @category VARCHAR(300),
+    @message VARCHAR(500),
+    @uuqid UNIQUEIDENTIFIER
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @id_user INT;
+
+    -- Resolve user
+    SELECT @id_user = id_user
+    FROM skey_user
+    WHERE uuqid = @uuqid;
+
+    -- Validate user
+    IF (@id_user IS NULL)
+    BEGIN
+        SELECT 0 AS status, 'Invalid user' AS message;
+        RETURN;
+    END
+
+    -- INSERT
+    IF (@id_budget IS NULL OR @id_budget = 0)
+    BEGIN
+        INSERT INTO ekey_budget
+        (
+            title,
+            expense,
+            category,
+            message,
+            createdby,
+            createddt
+        )
+        VALUES
+        (
+            @title,
+            @expense,
+            @category,
+            @message,
+            @id_user,
+            GETDATE()
+        );
+
+        SET @id_budget = SCOPE_IDENTITY();
+
+        SELECT 
+            1 AS status, 
+            'Inserted successfully' AS message, 
+            @id_budget AS id_budget;
+    END
+    ELSE
+    BEGIN
+        -- UPDATE
+        UPDATE ekey_budget
+        SET
+            title = @title,
+            expense = @expense,
+            category = @category,
+            message = @message,
+            modifiedby = @id_user,
+            modifieddt = GETDATE()
+        WHERE id_budget = @id_budget;
+
+        IF (@@ROWCOUNT = 0)
+        BEGIN
+            SELECT 0 AS status, 'Budget not found' AS message;
+        END
+        ELSE
+        BEGIN
+            SELECT 
+                1 AS status, 
+                'Updated successfully' AS message, 
+                @id_budget AS id_budget;
+        END
+    END
+END
+GO
+CREATE PROCEDURE expense_del
+(
+    @id_expense INT,
+    @uuqid UNIQUEIDENTIFIER
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @id_user INT;
+
+    -- Resolve user
+    SELECT @id_user = id_user
+    FROM skey_user
+    WHERE uuqid = @uuqid;
+
+    -- Validate user
+    IF (@id_user IS NULL)
+    BEGIN
+        SELECT 0 AS status, 'Invalid user' AS message;
+        RETURN;
+    END
+
+    -- Delete (restrict to user's own data)
+    DELETE FROM ekey_expense
+    WHERE id_expense = @id_expense
+      AND createdby = @id_user;
+
+    IF (@@ROWCOUNT = 0)
+    BEGIN
+        SELECT 0 AS status, 'Expense not found or unauthorized' AS message;
+    END
+    ELSE
+    BEGIN
+        SELECT 1 AS status, 'Deleted successfully' AS message;
+    END
+END
+CREATE PROCEDURE budget_delete
+(
+    @id_budget INT,
+    @uuqid UNIQUEIDENTIFIER
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @id_user INT;
+
+    -- Resolve user
+    SELECT @id_user = id_user
+    FROM skey_user
+    WHERE uuqid = @uuqid;
+
+    -- Validate user
+    IF (@id_user IS NULL)
+    BEGIN
+        SELECT 0 AS status, 'Invalid user' AS message;
+        RETURN;
+    END
+
+    -- Delete (restrict to user's own data)
+    DELETE FROM ekey_budget
+    WHERE id_budget = @id_budget
+      AND createdby = @id_user;
+
+    IF (@@ROWCOUNT = 0)
+    BEGIN
+        SELECT 0 AS status, 'Budget not found or unauthorized' AS message;
+    END
+    ELSE
+    BEGIN
+        SELECT 1 AS status, 'Deleted successfully' AS message;
+    END
+END
+GO
+CREATE PROCEDURE user_addupd
+(
+    @id_user INT = 0 OUTPUT,
+    @loginname VARCHAR(300),
+    @fullname VARCHAR(300),
+    @password VARCHAR(300) = NULL, -- plain input, will hash
+    @is_active INT = 1,
+    @regid VARCHAR(500) = NULL,
+    @os VARCHAR(100) = NULL,
+    @createdby INT = NULL
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Validate loginname
+    IF (@loginname IS NULL OR LTRIM(RTRIM(@loginname)) = '')
+    BEGIN
+        SELECT 0 AS status, 'Login name required' AS message;
+        RETURN;
+    END
+
+    -- Check duplicate loginname (excluding current user)
+    IF EXISTS (
+        SELECT 1 FROM skey_user 
+        WHERE loginname = @loginname 
+        AND id_user <> ISNULL(@id_user, 0)
+    )
+    BEGIN
+        SELECT 0 AS status, 'Login already exists' AS message;
+        RETURN;
+    END
+
+    -- INSERT
+    IF (@id_user IS NULL OR @id_user = 0)
+    BEGIN
+        INSERT INTO skey_user
+        (
+            loginname,
+            fullname,
+            password,
+            is_active,
+            uuqid,
+            regid,
+            os,
+            createdby,
+            createddt
+        )
+        VALUES
+        (
+            @loginname,
+            @fullname,
+            HASHBYTES('SHA2_256', ISNULL(@password,'')),
+            @is_active,
+            NEWID(),
+            @regid,
+            @os,
+            @createdby,
+            GETDATE()
+        );
+
+        SET @id_user = SCOPE_IDENTITY();
+
+        SELECT 1 AS status, 'User created successfully' AS message, @id_user AS id_user;
+    END
+    ELSE
+    BEGIN
+        -- UPDATE
+        UPDATE skey_user
+        SET
+            loginname = @loginname,
+            fullname = @fullname,
+            is_active = @is_active,
+            regid = @regid,
+            os = @os,
+            password = CASE 
+                        WHEN @password IS NOT NULL 
+                        THEN HASHBYTES('SHA2_256', @password)
+                        ELSE password
+                       END
+        WHERE id_user = @id_user;
+
+        IF (@@ROWCOUNT = 0)
+        BEGIN
+            SELECT 0 AS status, 'User not found' AS message;
+        END
+        ELSE
+        BEGIN
+            SELECT 1 AS status, 'User updated successfully' AS message, @id_user AS id_user;
+        END
+    END
+END
+GO
+CREATE PROCEDURE user_delete
+(
+    @id_user INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Soft delete (deactivate)
+    UPDATE skey_user
+    SET is_active = 0
+    WHERE id_user = @id_user;
+
+    IF (@@ROWCOUNT = 0)
+    BEGIN
+        SELECT 0 AS status, 'User not found' AS message;
+    END
+    ELSE
+    BEGIN
+        SELECT 1 AS status, 'User deactivated successfully' AS message;
+    END
+END
