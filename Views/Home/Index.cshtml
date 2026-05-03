@@ -1,8 +1,131 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Expense Tracker";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<style>
+    body {
+        background: #0d0f14;
+        color: #fff;
+    }
+
+    .container {
+        padding: 30px;
+    }
+
+    h1 {
+        font-size: 28px;
+        margin-bottom: 5px;
+    }
+
+    .subtext {
+        color: #aaa;
+        margin-bottom: 30px;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+
+    .card {
+        background: #151821;
+        padding: 20px;
+        border-radius: 12px;
+    }
+
+    .card-title {
+        color: #aaa;
+        font-size: 14px;
+    }
+
+    .card-value {
+        font-size: 22px;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+
+    .section {
+        margin-top: 30px;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+    }
+
+    .chart {
+        height: 200px;
+        background: #1c1f2b;
+        border-radius: 10px;
+    }
+
+    .bar {
+        height: 6px;
+        background: #2a2e3d;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .bar-fill {
+        height: 100%;
+        background: #ff6b4a;
+    }
+
+    .bottom-section {
+        margin-top: 30px;
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 20px;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        background: #1c1f2b;
+        border: none;
+        color: white;
+        border-radius: 8px;
+    }
+
+    button {
+        margin-top: 15px;
+        width: 100%;
+        padding: 12px;
+        background: #ff6b4a;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        cursor: pointer;
+    }
+</style>
+
+<div class="container">
+
+    <h1><span style="color:#ff6b4a">Expense</span> Tracker</h1>
+    <div class="subtext">Track, manage, and visualize your spending</div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="card-title">Total Spent</div>
+            <div class="card-value">$465.28</div>
+        </div>
+        <div class="card">
+            <div class="card-title">This Month</div>
+            <div class="card-value">$0.00</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Daily Average</div>
+            <div class="card-value">$66.47</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Transactions</div>
+            <div class="card-value">8</div>
+        </div>
+    </div>
+
 </div>
+
+<script>
+    console.log("Dashboard Loaded");
+</script>
