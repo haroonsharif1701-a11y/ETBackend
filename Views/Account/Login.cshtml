@@ -1,0 +1,137 @@
+﻿@{
+    ViewData["Title"] = "Login";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #0d0f14;
+            color: #fff;
+            display: flex;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            background: #151821;
+            padding: 40px;
+            border-radius: 12px;
+            width: 350px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+        }
+
+        h2 {
+            margin-bottom: 5px;
+        }
+
+        .subtext {
+            color: #aaa;
+            margin-bottom: 25px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #1c1f2b;
+            border: none;
+            border-radius: 8px;
+            color: white;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #ff6b4a;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .link {
+            margin-top: 15px;
+            text-align: center;
+            color: #aaa;
+        }
+
+            .link a {
+                color: #ff6b4a;
+                text-decoration: none;
+            }
+
+        .error {
+            color: #ff4d4d;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+        <h2><span style="color:#ff6b4a">Expense</span> Tracker</h2>
+        <div class="subtext">Login to your account</div>
+
+        <div id="error" class="error"></div>
+
+        <input type="text" id="email" placeholder="Email" />
+        <input type="password" id="password" placeholder="Password" />
+
+        <button onclick="login()">Login</button>
+
+        <div class="link">
+            Don’t have an account? <a href="/Account/Register">Register</a>
+        </div>
+    </div>
+
+    <script>
+        async function login() {
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const errorDiv = document.getElementById("error");
+
+            errorDiv.innerText = "";
+
+            if (!email || !password) {
+                errorDiv.innerText = "Email and password are required";
+                return;
+            }
+
+            try {
+                const res = await fetch('/services/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    errorDiv.innerText = data.message || "Login failed";
+                    return;
+                }
+
+                // Store JWT (adjust as per your implementation)
+                localStorage.setItem("token", data.token);
+
+                // Redirect
+                window.location.href = "/";
+
+            } catch (err) {
+                errorDiv.innerText = "Server error";
+            }
+        }
+    </script>
+
+</body>
+</html>

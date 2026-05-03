@@ -15,9 +15,11 @@ namespace ExpenseTracker
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddControllers();
+            // MVC + API
+            builder.Services.AddControllersWithViews();
+            builder.Services.AddRazorPages();
 
-            // JWT Configuration
+            // JWT
             var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
 
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -36,7 +38,6 @@ namespace ExpenseTracker
                         ClockSkew = TimeSpan.Zero
                     };
 
-                    // Support both Swagger (Header) and Cookie
                     options.Events = new JwtBearerEvents
                     {
                         OnMessageReceived = context =>
@@ -95,7 +96,7 @@ namespace ExpenseTracker
                 });
             });
 
-            // Dependency Injection 
+            // DI
             builder.Services.AddScoped<Db>();
             builder.Services.AddScoped<UserModel>();
             builder.Services.AddScoped<AuthService>();
@@ -109,15 +110,26 @@ namespace ExpenseTracker
                 app.UseSwaggerUI(c =>
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "ExpenseTracker API V1");
-                    c.RoutePrefix = string.Empty;
+                    c.RoutePrefix = "swagger"; // important
                 });
             }
 
             app.UseHttpsRedirection();
 
+            // ✅ REQUIRED
+            app.UseRouting();
+
+            app.UseStaticFiles();
+
             app.UseAuthentication();
             app.UseAuthorization();
 
+            // ✅ MVC ROUTE (DEFAULT)
+            app.MapControllerRoute(
+                name: "default",
+                pattern: "{controller=Account}/{action=Login}/{id?}");
+
+            // ✅ API ROUTES
             app.MapControllers();
 
             app.Run();
